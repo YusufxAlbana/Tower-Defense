@@ -1,9 +1,27 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Trophy, Skull, Coins, TrendingUp, Home, RotateCcw } from 'lucide-react';
+import { usePlayerStore } from '../store/gameStore';
+import { savePlayerData, getCurrentUser } from '../firebase';
 
 const GameStats = ({ stats, onRestart, onHome }) => {
   const { wave, kills, goldEarned, difficulty, mapName } = stats;
+  const { addCoins, updateStats, getPlayerData } = usePlayerStore();
+
+  useEffect(() => {
+    // Add coins and update stats
+    addCoins(goldEarned);
+    updateStats(wave, kills);
+    
+    // Save to Firebase
+    const user = getCurrentUser();
+    if (user) {
+      setTimeout(() => {
+        const data = getPlayerData();
+        savePlayerData(user.uid, data);
+      }, 500);
+    }
+  }, []);
 
   return (
     <div className="fixed inset-0 bg-slate-950/95 backdrop-blur-xl z-50 flex items-center justify-center p-4">

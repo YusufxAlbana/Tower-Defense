@@ -129,7 +129,7 @@ const Store = () => {
   const selectedTowerConfig = selectedTower ? TOWER_TYPES[selectedTower] : null;
 
   return (
-    <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white p-4 md:p-6 pb-12 min-h-screen">
+    <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white p-4 md:p-6 pb-12 min-h-screen pt-20">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">

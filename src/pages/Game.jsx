@@ -1028,10 +1028,6 @@ const GamePage = () => {
     });
     setShowSurrender(false);
     setShowStats(true);
-    
-    // Add coins to player store
-    const { addCoins } = require('../store/gameStore').usePlayerStore.getState();
-    addCoins(goldEarned);
   };
 
   const handleRestart = () => {
@@ -1274,8 +1270,6 @@ const GamePage = () => {
           {/* Game Over - Show Stats */}
           {gameOver && !showStats && (() => {
             const goldEarned = totalKills;
-            const { addCoins } = require('../store/gameStore').usePlayerStore.getState();
-            addCoins(goldEarned);
             
             if (!gameStats) {
               setGameStats({

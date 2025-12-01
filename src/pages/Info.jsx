@@ -27,7 +27,7 @@ const Info = () => {
   const EnemyIcon = enemy ? ENEMY_ICONS[enemy.id] : null;
 
   return (
-    <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white p-6 pb-12">
+    <div className="bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white p-6 pb-12 min-h-screen pt-20">
       <div className="max-w-6xl mx-auto">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">

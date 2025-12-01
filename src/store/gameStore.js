@@ -479,6 +479,44 @@ export const usePlayerStore = create(
           }
         });
         return activeTowers;
+      },
+
+      // Set player data from Firebase
+      setPlayerData: (data) => {
+        set({
+          coins: data.coins || 0,
+          unlockedTowers: data.unlockedTowers || ['ARCHER', 'CANNON', 'ICE'],
+          activeDeck: data.activeDeck || ['ARCHER', 'CANNON', 'ICE'],
+          totalGamesPlayed: data.totalGamesPlayed || 0,
+          highestWave: data.highestWave || 0,
+          totalKills: data.totalKills || 0
+        });
+      },
+
+      // Get data for Firebase save
+      getPlayerData: () => {
+        const state = get();
+        return {
+          coins: state.coins,
+          unlockedTowers: state.unlockedTowers,
+          activeDeck: state.activeDeck,
+          totalGamesPlayed: state.totalGamesPlayed,
+          highestWave: state.highestWave,
+          totalKills: state.totalKills
+        };
+      },
+
+      // Reset all progress
+      resetData: () => {
+        set({
+          coins: 0,
+          unlockedTowers: ['ARCHER', 'CANNON', 'ICE'],
+          activeDeck: ['ARCHER', 'CANNON', 'ICE'],
+          totalGamesPlayed: 0,
+          highestWave: 0,
+          totalKills: 0
+        });
+        return activeTowers;
       }
     }),
     {

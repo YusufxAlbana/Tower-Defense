@@ -34,7 +34,7 @@ const HomePage = () => {
   };
 
   return (
-    <div className="w-full h-full flex flex-col relative overflow-hidden bg-[#020617] text-white font-sans">
+    <div className="w-full h-full flex flex-col relative overflow-hidden bg-[#020617] text-white font-sans pt-16">
       {/* Animated Background */}
       <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:64px_64px] opacity-10"></div>
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,#020617_100%)] opacity-80 pointer-events-none"></div>
