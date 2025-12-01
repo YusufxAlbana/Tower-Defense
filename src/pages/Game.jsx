@@ -19,9 +19,34 @@ function cn(...inputs) {
 // --- CONSTANTS ---
 const GRID_W = 14;
 const GRID_H = 9;
-const CELL_SIZE = 64;
+const BASE_CELL_SIZE = 64;
 const FPS = 60;
 const WAVE_INTERVAL = 12;
+
+// Calculate responsive cell size
+const getResponsiveCellSize = () => {
+  const width = window.innerWidth;
+  const height = window.innerHeight;
+  
+  // Mobile portrait
+  if (width < 640) {
+    return Math.min(
+      Math.floor((width - 32) / GRID_W),
+      Math.floor((height - 200) / GRID_H)
+    );
+  }
+  // Mobile landscape / Tablet portrait
+  if (width < 1024) {
+    return Math.min(
+      Math.floor((width - 400) / GRID_W),
+      Math.floor((height - 160) / GRID_H)
+    );
+  }
+  // Desktop
+  return BASE_CELL_SIZE;
+};
+
+const CELL_SIZE = getResponsiveCellSize();
 
 const PATH_COORDINATES = [
   { x: 0, y: 4 }, { x: 1, y: 4 }, { x: 2, y: 4 }, { x: 2, y: 3 }, { x: 2, y: 2 },
@@ -452,9 +477,9 @@ const useGameStore = create(
 
 
 // --- COMPONENTS ---
-const GameEntity = ({ x, y, children, className, zIndex = 20 }) => (
+const GameEntity = ({ x, y, children, className, zIndex = 20, cellSize = CELL_SIZE }) => (
   <div className={cn("absolute top-0 left-0 flex items-center justify-center pointer-events-none transition-transform duration-100", className)} 
-    style={{ width: CELL_SIZE, height: CELL_SIZE, transform: `translate3d(${x * CELL_SIZE}px, ${y * CELL_SIZE}px, 0)`, zIndex }}>
+    style={{ width: cellSize, height: cellSize, transform: `translate3d(${x * cellSize}px, ${y * cellSize}px, 0)`, zIndex }}>
     {children}
   </div>
 );
@@ -493,48 +518,76 @@ const StatPill = ({ icon: Icon, label, value, colorClass, iconColorClass }) => (
   </div>
 );
 
+const MobileStatPill = ({ icon: Icon, value, colorClass }) => (
+  <div className="flex items-center gap-1.5 bg-slate-900/90 px-2 py-1.5 rounded-lg border border-slate-800/80 shadow-lg">
+    <Icon size={12} className={colorClass} />
+    <span className={cn("text-sm font-black font-mono leading-none", colorClass)}>{value}</span>
+  </div>
+);
+
 const TopBar = () => {
   const { gold, lives, wave, score, soundEnabled, toggleSound } = useGameStore();
   const navigate = useNavigate();
   const [showStats, setShowStats] = useState(false);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
+
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
   
   return (
-    <div className="fixed top-0 left-0 right-0 h-20 z-50 bg-slate-950/95 backdrop-blur-xl border-b border-slate-800/50 shadow-2xl">
-      <div className="max-w-[1800px] mx-auto px-6 h-full flex items-center justify-between">
-        <button onClick={() => navigate('/')} className="flex items-center gap-3 hover:opacity-80 transition-opacity group">
-          <div className="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
-            <Shield size={20} className="text-white" />
+    <div className="fixed top-0 left-0 right-0 h-16 md:h-20 z-50 bg-slate-950/95 backdrop-blur-xl border-b border-slate-800/50 shadow-2xl">
+      <div className="max-w-[1800px] mx-auto px-3 md:px-6 h-full flex items-center justify-between">
+        <button onClick={() => navigate('/')} className="flex items-center gap-2 md:gap-3 hover:opacity-80 transition-opacity group">
+          <div className="w-8 h-8 md:w-10 md:h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform">
+            <Shield size={isMobile ? 16 : 20} className="text-white" />
           </div>
-          <div>
-            <h1 className="text-base font-black text-white tracking-wider">
-              DEFENSE<span className="text-indigo-400">GRID</span>
-            </h1>
-            <span className="text-[8px] font-semibold text-slate-500 tracking-widest">COMMAND CENTER</span>
-          </div>
+          {!isMobile && (
+            <div>
+              <h1 className="text-sm md:text-base font-black text-white tracking-wider">
+                DEFENSE<span className="text-indigo-400">GRID</span>
+              </h1>
+              <span className="text-[7px] md:text-[8px] font-semibold text-slate-500 tracking-widest">COMMAND CENTER</span>
+            </div>
+          )}
         </button>
         
-        <div className="flex items-center gap-3">
-          <div className="bg-slate-800/60 px-4 py-2 rounded-lg border border-slate-700/50 mr-2 hover:scale-105 transition-transform">
-            <div className="text-[8px] text-slate-400 font-semibold uppercase tracking-wider text-center">Wave</div>
-            <div className="text-2xl font-black text-white leading-none text-center font-mono">{wave}</div>
+        <div className="flex items-center gap-1.5 md:gap-3">
+          <div className="bg-slate-800/60 px-2 md:px-4 py-1.5 md:py-2 rounded-lg border border-slate-700/50 hover:scale-105 transition-transform">
+            <div className="text-[7px] md:text-[8px] text-slate-400 font-semibold uppercase tracking-wider text-center">Wave</div>
+            <div className="text-lg md:text-2xl font-black text-white leading-none text-center font-mono">{wave}</div>
           </div>
-          <StatPill icon={Coins} label="Funds" value={gold} colorClass="text-yellow-400" iconColorClass="text-yellow-400" />
-          <StatPill icon={Heart} label="Lives" value={lives} colorClass="text-rose-400" iconColorClass="text-rose-400" />
-          <StatPill icon={TrendingUp} label="Score" value={score} colorClass="text-emerald-400" iconColorClass="text-emerald-400" />
+          
+          {isMobile ? (
+            <>
+              <MobileStatPill icon={Coins} value={gold} colorClass="text-yellow-400" />
+              <MobileStatPill icon={Heart} value={lives} colorClass="text-rose-400" />
+            </>
+          ) : (
+            <>
+              <StatPill icon={Coins} label="Funds" value={gold} colorClass="text-yellow-400" iconColorClass="text-yellow-400" />
+              <StatPill icon={Heart} label="Lives" value={lives} colorClass="text-rose-400" iconColorClass="text-rose-400" />
+              <StatPill icon={TrendingUp} label="Score" value={score} colorClass="text-emerald-400" iconColorClass="text-emerald-400" />
+            </>
+          )}
           
           <button 
             onClick={toggleSound}
-            className="w-10 h-10 bg-slate-800/80 hover:bg-slate-700 rounded-lg flex items-center justify-center border border-slate-700/50 transition-all hover:scale-110"
+            className="w-8 h-8 md:w-10 md:h-10 bg-slate-800/80 hover:bg-slate-700 rounded-lg flex items-center justify-center border border-slate-700/50 transition-all hover:scale-110"
           >
-            {soundEnabled ? <Volume2 size={18} className="text-slate-300" /> : <VolumeX size={18} className="text-slate-500" />}
+            {soundEnabled ? <Volume2 size={isMobile ? 14 : 18} className="text-slate-300" /> : <VolumeX size={isMobile ? 14 : 18} className="text-slate-500" />}
           </button>
           
-          <button 
-            onClick={() => setShowStats(!showStats)}
-            className="w-10 h-10 bg-slate-800/80 hover:bg-slate-700 rounded-lg flex items-center justify-center border border-slate-700/50 transition-all hover:scale-110"
-          >
-            <Trophy size={18} className="text-yellow-400" />
-          </button>
+          {!isMobile && (
+            <button 
+              onClick={() => setShowStats(!showStats)}
+              className="w-10 h-10 bg-slate-800/80 hover:bg-slate-700 rounded-lg flex items-center justify-center border border-slate-700/50 transition-all hover:scale-110"
+            >
+              <Trophy size={18} className="text-yellow-400" />
+            </button>
+          )}
         </div>
       </div>
       
@@ -571,7 +624,140 @@ const ControlPanel = () => {
   const { selectedTile, towers, buildTower, upgradeTower, sellTower, gold, isPlaying, startGame, pauseGame, restartGame, gameOver, waveTimer, useAbility } = useGameStore();
   const selectedTower = selectedTile ? towers.find(t => t.x === selectedTile.x && t.y === selectedTile.y) : null;
   const canBuild = selectedTile && !selectedTower && !isPath(selectedTile.x, selectedTile.y);
+  const [isMobile, setIsMobile] = useState(window.innerWidth < 1024);
 
+  useEffect(() => {
+    const handleResize = () => setIsMobile(window.innerWidth < 1024);
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Mobile: Show as bottom sheet
+  if (isMobile) {
+    return (
+      <div className="fixed bottom-0 left-0 right-0 bg-slate-950/95 border-t border-slate-800/50 shadow-2xl z-40 backdrop-blur-xl max-h-[50vh] flex flex-col">
+        <div className="flex-none px-4 py-3 border-b border-slate-800/50 bg-slate-900/30 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className={cn("w-2 h-2 rounded-full animate-pulse", isPlaying ? "bg-emerald-500" : "bg-amber-500")}></div>
+            <span className={cn("text-xs font-bold", isPlaying ? "text-emerald-400" : "text-amber-400")}>
+              {isPlaying ? "ACTIVE" : "STANDBY"}
+            </span>
+          </div>
+          {waveTimer > 0 && !isPlaying && (
+            <div className="text-right">
+              <span className="text-xs text-slate-500 mr-2">Next:</span>
+              <span className="text-lg font-mono text-white font-black">{waveTimer}s</span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex-1 overflow-y-auto px-4 py-3 custom-scrollbar">
+          {!selectedTile && (
+            <div className="text-center py-6 opacity-50">
+              <Target size={32} className="mx-auto mb-2 text-slate-500" />
+              <p className="text-xs text-slate-500">Select a tile to build</p>
+            </div>
+          )}
+
+          {canBuild && (
+            <div className="grid grid-cols-2 gap-2">
+              {Object.values(TOWER_TYPES).map(t => {
+                const canAfford = gold >= t.cost;
+                return (
+                  <button 
+                    key={t.id} 
+                    disabled={!canAfford} 
+                    onClick={() => buildTower(t.id)} 
+                    className={cn(
+                      "flex flex-col items-center gap-2 p-3 rounded-lg border transition-all",
+                      canAfford 
+                        ? "bg-slate-900/80 border-slate-800/80 hover:border-indigo-500/40" 
+                        : "bg-slate-900/30 border-slate-800/30 opacity-40"
+                    )}
+                  >
+                    <div className={cn("w-10 h-10 rounded-lg bg-gradient-to-br flex items-center justify-center", t.color)}>
+                      <t.icon size={18} className="text-white" />
+                    </div>
+                    <div className="text-center">
+                      <div className="text-xs font-bold text-white">{t.name}</div>
+                      <div className={cn("text-[10px] font-mono font-bold", canAfford ? "text-yellow-400" : "text-red-400")}>
+                        {t.cost}G
+                      </div>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+
+          {selectedTower && (
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 pb-3 border-b border-slate-800/50">
+                <div className={cn("w-12 h-12 rounded-lg bg-gradient-to-br flex items-center justify-center", selectedTower.stats.color)}>
+                  {React.createElement(selectedTower.stats.icon, { size: 20, className: "text-white" })}
+                </div>
+                <div className="flex-1">
+                  <h2 className="text-sm font-bold text-white">{selectedTower.stats.name}</h2>
+                  <div className="flex items-center gap-2 text-[10px] text-slate-500">
+                    <span>Lvl {selectedTower.level}</span>
+                    <span>•</span>
+                    <span>{selectedTower.kills} 💀</span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex gap-2">
+                {selectedTower.level < 3 ? (
+                  <button 
+                    onClick={() => upgradeTower(selectedTower.id)} 
+                    disabled={gold < Math.floor(selectedTower.stats.cost * 1.5 * selectedTower.level)} 
+                    className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 text-white rounded-lg text-xs font-bold"
+                  >
+                    Upgrade ({Math.floor(selectedTower.stats.cost * 1.5 * selectedTower.level)}G)
+                  </button>
+                ) : (
+                  <div className="flex-1 py-2.5 bg-yellow-500/20 border border-yellow-500/30 text-yellow-400 rounded-lg text-xs font-bold text-center">
+                    MAX
+                  </div>
+                )}
+                <button 
+                  onClick={() => sellTower(selectedTower.id)} 
+                  className="px-4 py-2.5 bg-rose-600 hover:bg-rose-500 text-white rounded-lg text-xs font-bold"
+                >
+                  Sell
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        <div className="flex-none p-3 border-t border-slate-800/50">
+          {gameOver ? (
+            <button 
+              onClick={restartGame} 
+              className="w-full bg-rose-600 hover:bg-rose-500 text-white h-11 rounded-lg font-bold text-xs uppercase"
+            >
+              Restart
+            </button>
+          ) : (
+            <button 
+              onClick={isPlaying ? pauseGame : startGame} 
+              className={cn(
+                "w-full h-11 rounded-lg font-bold text-xs uppercase flex items-center justify-center gap-2",
+                isPlaying 
+                  ? "bg-slate-800 hover:bg-slate-700 text-white" 
+                  : "bg-emerald-500 hover:bg-emerald-400 text-white"
+              )}
+            >
+              {isPlaying ? <><Pause size={14} /> Pause</> : <><Play size={14} /> Start</>}
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Desktop: Show as sidebar
   return (
     <div className="w-[360px] min-w-[360px] bg-slate-950/95 border-l border-slate-800/50 flex flex-col shadow-2xl relative z-40 h-full backdrop-blur-xl">
       <div className="flex-none h-16 px-5 border-b border-slate-800/50 bg-slate-900/30 flex items-center justify-between">
@@ -852,14 +1038,24 @@ const GameLoop = () => {
 const GamePage = () => {
   const { enemies, towers, projectiles, particles, floatingTexts, selectedTile, selectTile, gameOver, restartGame, deselect, score, wave } = useGameStore();
   const navigate = useNavigate();
+  const [cellSize, setCellSize] = useState(CELL_SIZE);
+
+  useEffect(() => {
+    const handleResize = () => {
+      const newSize = getResponsiveCellSize();
+      setCellSize(newSize);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   return (
     <div className="w-full h-screen bg-[#020617] flex flex-col font-sans select-none overflow-hidden text-slate-200">
       <GameLoop />
       <TopBar />
 
-      <div className="flex-1 flex overflow-hidden pt-20">
-        <div className="flex-1 relative flex items-center justify-center overflow-hidden" onClick={deselect}>
+      <div className="flex-1 flex overflow-hidden pt-16 md:pt-20 pb-0 lg:pb-0">
+        <div className="flex-1 relative flex items-center justify-center overflow-hidden p-2 md:p-4 lg:p-6" onClick={deselect}>
           {/* Background Effects */}
           <div className="absolute inset-0 opacity-20 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:48px_48px] pointer-events-none"></div>
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,transparent_0%,#020617_90%)] opacity-80 pointer-events-none"></div>
@@ -870,16 +1066,21 @@ const GamePage = () => {
 
           {/* Game Board */}
           <div 
-            className="relative shadow-[0_0_100px_-20px_rgba(99,102,241,0.3)] bg-[#0f172a] border-2 border-slate-800 rounded-2xl overflow-hidden ring-1 ring-slate-700/50 transition-all duration-300 hover:shadow-[0_0_120px_-20px_rgba(99,102,241,0.4)]" 
-            style={{ width: GRID_W * CELL_SIZE, height: GRID_H * CELL_SIZE }} 
+            className="relative shadow-[0_0_100px_-20px_rgba(99,102,241,0.3)] bg-[#0f172a] border border-slate-800 md:border-2 rounded-lg md:rounded-2xl overflow-hidden ring-1 ring-slate-700/50 transition-all duration-300 hover:shadow-[0_0_120px_-20px_rgba(99,102,241,0.4)]" 
+            style={{ 
+              width: GRID_W * cellSize, 
+              height: GRID_H * cellSize,
+              maxWidth: '100%',
+              maxHeight: '100%'
+            }} 
             onClick={(e) => e.stopPropagation()}
           >
             {/* Grid Layer */}
             <div 
               className="relative z-10 grid" 
               style={{ 
-                gridTemplateColumns: `repeat(${GRID_W}, ${CELL_SIZE}px)`, 
-                gridTemplateRows: `repeat(${GRID_H}, ${CELL_SIZE}px)` 
+                gridTemplateColumns: `repeat(${GRID_W}, ${cellSize}px)`, 
+                gridTemplateRows: `repeat(${GRID_H}, ${cellSize}px)` 
               }}
             >
               {Array.from({ length: GRID_H }).map((_, y) => 
@@ -900,32 +1101,37 @@ const GamePage = () => {
             {towers.map(tower => {
               const isSelected = selectedTile?.x === tower.x && selectedTile?.y === tower.y;
               const Icon = tower.stats.icon;
+              const towerSize = Math.max(32, cellSize * 0.75);
               return (
-                <GameEntity key={tower.id} x={tower.x} y={tower.y} zIndex={15}>
+                <GameEntity key={tower.id} x={tower.x} y={tower.y} zIndex={15} cellSize={cellSize}>
                   <div 
                     onClick={(e) => { e.stopPropagation(); selectTile(tower.x, tower.y); }} 
                     className={cn(
-                      "w-12 h-12 rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 bg-gradient-to-br border cursor-pointer relative hover:-translate-y-1 hover:shadow-xl",
+                      "rounded-lg md:rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 bg-gradient-to-br border cursor-pointer relative hover:-translate-y-1 hover:shadow-xl",
                       tower.stats.color,
-                      isSelected ? "border-white ring-4 ring-white/30 scale-110 z-20 shadow-2xl" : "border-white/20 hover:border-white/40"
+                      isSelected ? "border-white ring-2 md:ring-4 ring-white/30 scale-110 z-20 shadow-2xl" : "border-white/20 hover:border-white/40"
                     )}
+                    style={{ width: towerSize, height: towerSize }}
                   >
-                    <Icon size={24} className="text-white drop-shadow-lg" />
-                    <div className="absolute -top-2 -right-2 w-5 h-5 bg-slate-950 border-2 border-slate-700 rounded-full flex items-center justify-center text-[9px] font-bold text-white shadow-md">
+                    <Icon size={Math.max(16, towerSize * 0.5)} className="text-white drop-shadow-lg" />
+                    <div 
+                      className="absolute -top-1 md:-top-2 -right-1 md:-right-2 bg-slate-950 border border-slate-700 md:border-2 rounded-full flex items-center justify-center text-[8px] md:text-[9px] font-bold text-white shadow-md"
+                      style={{ width: Math.max(16, towerSize * 0.3), height: Math.max(16, towerSize * 0.3) }}
+                    >
                       {tower.level}
                     </div>
                     {tower.abilityCooldown === 0 && tower.level >= 2 && (
                       <div className="absolute -bottom-1 left-1/2 -translate-x-1/2">
-                        <Sparkles size={12} className="text-yellow-400 animate-pulse" />
+                        <Sparkles size={Math.max(8, cellSize * 0.2)} className="text-yellow-400 animate-pulse" />
                       </div>
                     )}
                   </div>
                   {isSelected && (
                     <div 
-                      className={cn("absolute rounded-full border-2 border-white/40 bg-white/5 animate-pulse pointer-events-none", tower.stats.ringColor)} 
+                      className={cn("absolute rounded-full border border-white/40 md:border-2 bg-white/5 animate-pulse pointer-events-none", tower.stats.ringColor)} 
                       style={{ 
-                        width: tower.range * 2 * CELL_SIZE, 
-                        height: tower.range * 2 * CELL_SIZE, 
+                        width: tower.range * 2 * cellSize, 
+                        height: tower.range * 2 * cellSize, 
                         zIndex: -1 
                       }} 
                     />
@@ -935,11 +1141,20 @@ const GamePage = () => {
             })}
 
             {/* Enemies */}
-            {enemies.map(enemy => (
-              <GameEntity key={enemy.id} x={enemy.x} y={enemy.y} zIndex={20}>
+            {enemies.map(enemy => {
+              const enemySize = enemy.type === 'BOSS' ? Math.max(36, cellSize * 0.75) : Math.max(24, cellSize * 0.5);
+              return (
+              <GameEntity key={enemy.id} x={enemy.x} y={enemy.y} zIndex={20} cellSize={cellSize}>
                 <div className="relative">
                   {/* HP Bar */}
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 w-10 h-1.5 bg-slate-900 rounded-full overflow-hidden border border-slate-800 shadow-sm">
+                  <div 
+                    className="absolute left-1/2 -translate-x-1/2 bg-slate-900 rounded-full overflow-hidden border border-slate-800 shadow-sm"
+                    style={{ 
+                      top: -Math.max(8, cellSize * 0.15), 
+                      width: Math.max(24, cellSize * 0.6), 
+                      height: Math.max(3, cellSize * 0.08) 
+                    }}
+                  >
                     <div 
                       className={cn(
                         "h-full transition-all duration-200",
@@ -951,32 +1166,39 @@ const GamePage = () => {
                   </div>
                   
                   {/* Enemy Icon */}
-                  <div className={cn(
-                    "w-9 h-9 rounded-full flex items-center justify-center shadow-lg border-2 border-slate-900/50 relative transition-all",
-                    enemy.type === 'BOSS' ? "w-12 h-12 animate-pulse" : "",
-                    enemy.frozen > 0 ? "ring-2 ring-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.6)]" : "",
-                    enemy.burning > 0 ? "ring-2 ring-orange-400 shadow-[0_0_15px_rgba(251,146,60,0.6)]" : "",
-                    ENEMY_TYPES[enemy.type].color
-                  )}>
+                  <div 
+                    className={cn(
+                      "rounded-full flex items-center justify-center shadow-lg border border-slate-900/50 md:border-2 relative transition-all",
+                      enemy.type === 'BOSS' ? "animate-pulse" : "",
+                      enemy.frozen > 0 ? "ring-1 md:ring-2 ring-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.6)]" : "",
+                      enemy.burning > 0 ? "ring-1 md:ring-2 ring-orange-400 shadow-[0_0_15px_rgba(251,146,60,0.6)]" : "",
+                      ENEMY_TYPES[enemy.type].color
+                    )}
+                    style={{ width: enemySize, height: enemySize }}
+                  >
                     {React.createElement(ENEMY_TYPES[enemy.type].icon, { 
-                      size: enemy.type === 'BOSS' ? 24 : 14, 
+                      size: Math.max(12, enemySize * 0.5), 
                       className: "text-white drop-shadow-md" 
                     })}
-                    {enemy.frozen > 0 && <Snowflake size={10} className="absolute -right-1 -bottom-1 text-cyan-200 animate-spin" />}
-                    {enemy.burning > 0 && <Flame size={10} className="absolute -right-1 -bottom-1 text-orange-400 animate-pulse" />}
+                    {enemy.frozen > 0 && <Snowflake size={Math.max(8, cellSize * 0.15)} className="absolute -right-1 -bottom-1 text-cyan-200 animate-spin" />}
+                    {enemy.burning > 0 && <Flame size={Math.max(8, cellSize * 0.15)} className="absolute -right-1 -bottom-1 text-orange-400 animate-pulse" />}
                     {enemy.armor > 0 && (
-                      <div className="absolute -top-1 -left-1 w-4 h-4 bg-slate-800 rounded-full flex items-center justify-center border border-slate-700">
-                        <Shield size={8} className="text-slate-400" />
+                      <div 
+                        className="absolute -top-1 -left-1 bg-slate-800 rounded-full flex items-center justify-center border border-slate-700"
+                        style={{ width: Math.max(12, enemySize * 0.3), height: Math.max(12, enemySize * 0.3) }}
+                      >
+                        <Shield size={Math.max(6, enemySize * 0.2)} className="text-slate-400" />
                       </div>
                     )}
                   </div>
                 </div>
               </GameEntity>
-            ))}
+            );
+            })}
 
             {/* Projectiles */}
             {projectiles.map(p => (
-              <GameEntity key={p.id} x={p.x} y={p.y} zIndex={30} className="w-0 h-0">
+              <GameEntity key={p.id} x={p.x} y={p.y} zIndex={30} className="w-0 h-0" cellSize={cellSize}>
                 <div 
                   className={cn(
                     "rounded-full shadow-lg transition-all",
@@ -984,19 +1206,22 @@ const GamePage = () => {
                     p.isAbility ? "bg-purple-400 shadow-purple-500/60" :
                     "bg-yellow-300 shadow-orange-500/60"
                   )} 
-                  style={{ width: p.isAbility ? 10 : 8, height: p.isAbility ? 10 : 8 }} 
+                  style={{ 
+                    width: Math.max(6, cellSize * (p.isAbility ? 0.15 : 0.12)), 
+                    height: Math.max(6, cellSize * (p.isAbility ? 0.15 : 0.12)) 
+                  }} 
                 />
               </GameEntity>
             ))}
 
             {/* Particles */}
             {particles.map(p => (
-              <GameEntity key={p.id} x={p.x} y={p.y} zIndex={35} className="w-0 h-0">
+              <GameEntity key={p.id} x={p.x} y={p.y} zIndex={35} className="w-0 h-0" cellSize={cellSize}>
                 <div 
                   className={cn("rounded-full animate-ping opacity-75 absolute", p.color)} 
                   style={{ 
-                    width: (p.size || 0.5) * CELL_SIZE, 
-                    height: (p.size || 0.5) * CELL_SIZE 
+                    width: (p.size || 0.5) * cellSize, 
+                    height: (p.size || 0.5) * cellSize 
                   }} 
                 />
               </GameEntity>
@@ -1008,11 +1233,11 @@ const GamePage = () => {
                 key={t.id} 
                 className={cn("absolute z-50 pointer-events-none font-bold drop-shadow-lg", t.color)} 
                 style={{ 
-                  left: t.x * CELL_SIZE + CELL_SIZE / 2, 
-                  top: t.y * CELL_SIZE, 
+                  left: t.x * cellSize + cellSize / 2, 
+                  top: t.y * cellSize, 
                   transform: 'translate(-50%, -100%)', 
                   opacity: t.life / 50,
-                  fontSize: t.text.includes('🏆') ? '16px' : '12px'
+                  fontSize: t.text.includes('🏆') ? `${Math.max(12, cellSize * 0.25)}px` : `${Math.max(10, cellSize * 0.18)}px`
                 }}
               >
                 {t.text}
@@ -1022,38 +1247,38 @@ const GamePage = () => {
 
           {/* Game Over Modal */}
           {gameOver && (
-            <div className="absolute inset-0 bg-slate-950/95 backdrop-blur-xl z-[100] flex flex-col items-center justify-center animate-in fade-in duration-500">
-              <div className="text-center space-y-6 max-w-md">
-                <h2 className="text-8xl font-black text-transparent bg-clip-text bg-gradient-to-b from-rose-500 via-rose-600 to-rose-900 drop-shadow-2xl animate-pulse">
+            <div className="absolute inset-0 bg-slate-950/95 backdrop-blur-xl z-[100] flex flex-col items-center justify-center animate-in fade-in duration-500 p-4">
+              <div className="text-center space-y-4 md:space-y-6 max-w-md w-full">
+                <h2 className="text-5xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-b from-rose-500 via-rose-600 to-rose-900 drop-shadow-2xl animate-pulse">
                   DEFEAT
                 </h2>
-                <div className="text-slate-400 text-base font-medium tracking-[0.2em] uppercase">
+                <div className="text-slate-400 text-sm md:text-base font-medium tracking-[0.2em] uppercase">
                   Defense System Offline
                 </div>
                 
                 {/* Final Stats */}
-                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6 space-y-3">
-                  <div className="flex justify-between text-sm">
+                <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-4 md:p-6 space-y-3">
+                  <div className="flex justify-between text-xs md:text-sm">
                     <span className="text-slate-500">Final Wave</span>
                     <span className="text-white font-bold">{wave}</span>
                   </div>
-                  <div className="flex justify-between text-sm">
+                  <div className="flex justify-between text-xs md:text-sm">
                     <span className="text-slate-500">Final Score</span>
                     <span className="text-emerald-400 font-bold">{score}</span>
                   </div>
                 </div>
 
-                <div className="flex gap-4">
+                <div className="flex flex-col sm:flex-row gap-3 md:gap-4">
                   <button 
                     onClick={restartGame} 
-                    className="px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-sm tracking-widest rounded-xl hover:scale-105 transition-all shadow-lg shadow-indigo-900/30"
+                    className="flex-1 px-6 md:px-8 py-3 md:py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold text-xs md:text-sm tracking-widest rounded-xl hover:scale-105 transition-all shadow-lg shadow-indigo-900/30"
                   >
-                    <RotateCcw size={16} className="inline mr-2" />
+                    <RotateCcw size={14} className="inline mr-2" />
                     RESTART
                   </button>
                   <button 
                     onClick={() => navigate('/')} 
-                    className="px-8 py-4 bg-slate-800 hover:bg-slate-700 text-white font-bold text-sm tracking-widest rounded-xl hover:scale-105 transition-all"
+                    className="flex-1 px-6 md:px-8 py-3 md:py-4 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs md:text-sm tracking-widest rounded-xl hover:scale-105 transition-all"
                   >
                     HOME
                   </button>
@@ -1063,8 +1288,10 @@ const GamePage = () => {
           )}
         </div>
 
-        <ControlPanel />
+        {window.innerWidth >= 1024 && <ControlPanel />}
       </div>
+      
+      {window.innerWidth < 1024 && <ControlPanel />}
     </div>
   );
 };
